@@ -1,0 +1,22 @@
+{
+  "tender_id": "033 / 2025",
+  "mode": null,
+  "open_date": "28/04/2025",
+  "cnpj": null,
+  "institution": "UNIVERSIDADE ESTADUAL DO VALE",
+  "city": null,
+  "state": null,
+  "tender_time": "15:00",
+  "items": [
+    {
+      "item_lot_number": "1 - 1",
+      "product_name": "MÓDULO DE MATRÍCULA",
+      "quantity": "1"
+    },
+    {
+      "item_lot_number": "1 - 2",
+      "product_name": "MÓDULO FINANCEIRO",
+      "quantity": "1"
+    }
+  ]
+}

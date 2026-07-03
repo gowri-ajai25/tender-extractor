@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Tender JSON Extractor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#f3f4f6;
+      --card-bg:#ffffff;
+      --border-subtle:#e5e7eb;
+      --accent:#2563eb;
+      --accent-soft:#eff6ff;
+      --text-main:#111827;
+      --text-muted:#6b7280;
+      --danger:#b91c1c;
+    }
+
+    /* Fill entire viewport and remove default margins */
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(circle at top left,#e5e7eb,#f9fafb);
+      color: var(--text-main);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      box-sizing: border-box;
+    }
+    *, *::before, *::after { box-sizing: inherit; }
+
+    /* Page wrapper uses full viewport */
+    .page {
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-sizing: border-box;
+    }
+
+    header {
+      padding: 18px 28px 8px 28px;
+      box-sizing: border-box;
+    }
+
+    h1 { margin:0; font-size:22px; }
+    .subtitle { margin:6px 0 0 0; color:var(--text-muted); font-size:13px; }
+
+    /* Main three-column layout fills remaining area */
+    .layout {
+      flex: 1 1 auto;
+      display: grid;
+      grid-template-columns: 360px 1fr 440px; /* left (prompt), center (chat), right (result) */
+      gap: 18px;
+      padding: 0 28px 28px 28px;
+      box-sizing: border-box;
+      height: calc(100vh - 86px); /* account for header height */
+    }
+
+    /* Card base */
+    .card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 18px 45px rgba(15,23,42,0.06);
+      display:flex;
+      flex-direction:column;
+      overflow: hidden;
+      height: 100%;
+      min-height: 0; /* important for flexbox children */
+    }
+
+    .card-header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; }
+    .card-title { font-weight:700; font-size:15px; }
+    .badge { font-size:12px; padding:4px 8px; border-radius:999px; background:var(--accent-soft); color:var(--accent); border:1px solid rgba(37,99,235,0.12) }
+
+    /* card body should allow children to shrink (min-height:0) */
+    .card-body {
+      padding: 12px 16px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      height: calc(100% - 56px); /* leave header */
+      box-sizing: border-box;
+      min-height: 0; /* crucial to let internal scroll areas work */
+    }
+
+    .section-label { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; }
+
+    /* LEFT - Prompt editor specifics */
+    #prompt-textarea {
+      width:100%;
+      height: 100%;
+      min-height: 300px;
+      resize:vertical;
+      border-radius:10px;
+      border:1px solid var(--border-subtle);
+      padding:10px;
+      font-family: ui-monospace, Menlo, Monaco, Consolas, "Courier New", monospace;
+      background:#fafafa;
+      overflow:auto;
+      white-space:pre-wrap;
+      box-sizing: border-box;
+    }
+    .left-footer { display:flex; gap:12px; align-items:center; margin-top:8px; }
+
+    /* CENTER - Chat specifics */
+    .chat-area { display:flex; flex-direction:column; height:100%; min-height:0; }
+
+    /* Messages area is scrollable and expands; min-height:0 is required */
+    .chat-messages {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: #f8fafc;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      box-sizing: border-box;
+      padding-bottom: 96px; /* leave space for the fixed input row (so messages don't overlap) */
+    }
+
+    .chat-message { max-width:78%; display:flex; flex-direction:column; }
+    .chat-message.bot { align-self:flex-start; text-align:left; }
+    .chat-message.user { align-self:flex-end; text-align:right; }
+
+    .chat-sender { font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.08em; }
+    .chat-bubble {
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--border-subtle);
+      box-shadow:0 2px 6px rgba(15,23,42,0.04);
+      white-space:pre-wrap;
+      word-break:break-word;
+      line-height:1.35;
+    }
+    .chat-bubble.bot { background:#fff; color:var(--text-main); }
+    .chat-bubble.user { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+    /* Chat input row stays at bottom of card-body and above chat messages (z-index) */
+    .chat-input-row {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top:12px;
+      flex-shrink:0;
+      position: relative;
+      z-index: 5;
+      background: transparent;
+    }
+
+    .upload-btn {
+      width:44px; height:44px; border-radius:999px; border:1px solid var(--border-subtle); background:#fff;
+      display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted);
+      flex-shrink:0;
+    }
+    .upload-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+    #chat-input {
+      flex:1;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--border-subtle);
+      outline:none;
+      font-size:14px;
+      background: #fff;
+    }
+    #chat-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,0.06); }
+
+    .file-name { font-size:12px; color:var(--text-muted); margin-top:6px; }
+
+    /* RIGHT - result specifics */
+    .result-scroll {
+      flex:1 1 auto;
+      overflow:auto;
+      border-radius:10px;
+      background:#030712;
+      color:#e5e7eb;
+      padding:12px;
+      font-family: ui-monospace, Menlo, Monaco, Consolas, "Courier New", monospace;
+      font-size:13px;
+      white-space:pre;
+      box-sizing: border-box;
+      min-height:0;
+    }
+
+    .right-footer { display:flex; align-items:center; gap:10px; margin-top:8px; }
+
+    .btn {
+      background:var(--accent);
+      color:#fff;
+      padding:8px 14px;
+      border-radius:999px;
+      border:0;
+      cursor:pointer;
+      font-weight:700;
+      box-shadow: 0 6px 18px rgba(37,99,235,0.12);
+    }
+    .btn.secondary { background:#fff; color:var(--accent); border:1px solid var(--border-subtle); box-shadow:none; }
+
+    .download-link { color:var(--accent); text-decoration:none; font-weight:700; }
+
+    /* responsive: stack on narrow screens */
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 1fr; padding: 12px; height: auto; gap:12px; }
+      .card { min-height: 420px; }
+      .page { height: auto; }
+      .chat-messages { padding-bottom: 120px; } /* more bottom spacing on mobile */
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Tender JSON Extractor</h1>
+    </header>
+
+    <div class="layout">
+      <!-- LEFT: Prompt editor -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Prompt Editor</div>
+          <div class="badge">Custom fields</div>
+        </div>
+
+        <div class="card-body">
+          <div class="section-label">Extraction prompt</div>
+          <textarea id="prompt-textarea">{{ default_prompt }}</textarea>
+
+          <div class="left-footer">
+            <button id="prompt-run-btn" class="btn">Run on latest PDF</button>
+            <div style="font-size:13px;color:var(--text-muted);">Runs the prompt against the last uploaded PDF (from chat).</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER: Chat -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">JSON Extractor (Chat)</div>
+          <div class="badge">PDF → JSON (chat)</div>
+        </div>
+
+        <div class="card-body chat-area">
+          <div id="chat-messages" class="chat-messages">
+            <div class="chat-message bot">
+              <div class="chat-sender">BOT</div>
+              <div class="chat-bubble bot">
+                Attach a tender PDF with the upload button below, or just ask about the last uploaded tender. I’ll reply with the JSON and provide a download link.
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column">
+            <form id="chat-form" class="chat-input-row" onsubmit="return false;">
+              <input type="file" id="chat-file" accept="application/pdf" style="display:none" />
+              <button type="button" id="upload-btn" class="upload-btn" title="Attach PDF">
+                <!-- upload SVG icon -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                  <polyline points="7 9 12 4 17 9" />
+                  <line x1="12" y1="4" x2="12" y2="16" />
+                </svg>
+              </button>
+
+              <input id="chat-input" type="text" placeholder="Ask: extract JSON, change fields, summarize, etc..." autocomplete="off" />
+              <button id="chat-send-btn" class="btn">Send</button>
+            </form>
+            <div id="chat-file-name" class="file-name"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Result -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Result</div>
+          <div class="badge">Output JSON</div>
+        </div>
+
+        <div class="card-body" style="padding:12px;">
+          <div class="section-label">JSON</div>
+          <div id="right-output" class="result-scroll">// JSON output will appear here after extraction.</div>
+
+          <div class="right-footer">
+            <a id="right-download" class="download-link" href="#" style="display:none">⬇ Download JSON</a>
+          </div>
+        </div>
+      </div>
+    </div> <!-- layout -->
+  </div> <!-- page -->
+
+  <script>
+    // Elements
+    const promptTextarea = document.getElementById("prompt-textarea");
+    const promptRunBtn = document.getElementById("prompt-run-btn");
+
+    const chatFileInput = document.getElementById("chat-file");
+    const uploadBtn = document.getElementById("upload-btn");
+    const chatInput = document.getElementById("chat-input");
+    const chatSendBtn = document.getElementById("chat-send-btn");
+    const chatMessages = document.getElementById("chat-messages");
+    const chatFileName = document.getElementById("chat-file-name");
+
+    const rightOutput = document.getElementById("right-output");
+    const rightDownload = document.getElementById("right-download");
+
+    // helper to append chat message (supports HTML for bot messages)
+    function appendChatMessage(sender, content, isBot=false, isHTML=false) {
+      const container = document.createElement("div");
+      container.className = 'chat-message ' + (isBot ? 'bot' : 'user');
+
+      const senderEl = document.createElement("div");
+      senderEl.className = 'chat-sender';
+      senderEl.textContent = sender.toUpperCase();
+
+      const bubble = document.createElement("div");
+      bubble.className = 'chat-bubble ' + (isBot ? 'bot' : 'user');
+
+      if (isHTML && isBot) bubble.innerHTML = content;
+      else bubble.textContent = content;
+
+      container.appendChild(senderEl);
+      container.appendChild(bubble);
+      chatMessages.appendChild(container);
+      // keep newest visible
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // wire upload button -> hidden file input
+    uploadBtn.addEventListener('click', () => chatFileInput.click());
+    chatFileInput.addEventListener('change', () => {
+      const f = chatFileInput.files[0];
+      chatFileName.textContent = f ? 'Attached: ' + f.name : '';
+    });
+
+    // RUN prompt (left) -> /prompt_extract
+    promptRunBtn.addEventListener('click', async () => {
+      const prompt = (promptTextarea.value || '').trim();
+      if (!prompt) { alert('Prompt cannot be empty'); return; }
+
+      promptRunBtn.disabled = true;
+      promptRunBtn.textContent = 'Running...';
+
+      try {
+        const res = await fetch('/prompt_extract', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ prompt })
+        });
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          rightOutput.textContent = '// ' + (data.error || 'Error running prompt');
+          rightDownload.style.display = 'none';
+        } else {
+          rightOutput.textContent = data.json || data;
+          if (data.filename) {
+            rightDownload.href = '/download/' + data.filename;
+            rightDownload.style.display = 'inline-block';
+          } else {
+            rightDownload.style.display = 'none';
+          }
+        }
+      } catch (err) {
+        rightOutput.textContent = '// Network error. Try again.';
+        rightDownload.style.display = 'none';
+      } finally {
+        promptRunBtn.disabled = false;
+        promptRunBtn.textContent = 'Run on latest PDF';
+      }
+    });
+
+    // CHAT send -> /chat_extract
+    async function sendChat() {
+      const file = chatFileInput.files[0];
+      const message = chatInput.value.trim();
+
+      if (!file && !message) {
+        appendChatMessage('Bot', 'Please attach a PDF or enter a prompt.', true);
+        return;
+      }
+
+      // show user messages
+      if (message) appendChatMessage('You', message, false);
+      if (file) appendChatMessage('You', 'Uploaded: ' + file.name, false);
+
+      const form = new FormData();
+      if (file) form.append('pdf', file);
+      form.append('message', message);
+
+      chatSendBtn.disabled = true;
+      chatSendBtn.textContent = 'Sending...';
+
+      try {
+        const res = await fetch('/chat_extract', { method: 'POST', body: form });
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          appendChatMessage('Bot', data.error || 'Error while processing', true);
+        } else {
+          // Bot: main reply (JSON text or chat reply)
+          if (data.reply) {
+            appendChatMessage('Bot', data.reply, true);
+            // also update right pane
+            rightOutput.textContent = data.reply;
+          }
+
+          // Bot: download link as a second message + update right download
+          if (data.filename) {
+            const linkHTML = `<a class="download-link" href="/download/${data.filename}">⬇ Download JSON</a>`;
+            appendChatMessage('Bot', linkHTML, true, true);
+            rightDownload.href = '/download/' + data.filename;
+            rightDownload.style.display = 'inline-block';
+          } else {
+            rightDownload.style.display = 'none';
+          }
+        }
+      } catch (err) {
+        appendChatMessage('Bot', 'Network error. Please try again.', true);
+      } finally {
+        // reset inputs
+        chatFileInput.value = '';
+        chatFileName.textContent = '';
+        chatInput.value = '';
+        chatSendBtn.disabled = false;
+        chatSendBtn.textContent = 'Send';
+      }
+    }
+
+    chatSendBtn.addEventListener('click', sendChat);
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+    });
+
+    // Keep chat scrolled to bottom on resize
+    window.addEventListener('resize', () => {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "tender_id": "301 / 2025",
+  "mode": null,
+  "open_date": "30/07/2025",
+  "cnpj": null,
+  "institution": "SECRETARIA DA SAÚDE",
+  "city": "PORTO ALEGRE",
+  "state": "RS",
+  "tender_time": "09:00",
+  "items": [
+    {
+      "item_lot_number": "Lote 1 / Item 1",
+      "product_name": "TENOFOVIR 300MG COMPRIMIDO",
+      "quantity": "40.000"
+    },
+    {
+      "item_lot_number": "Lote 2 / Item 1",
+      "product_name": "LAMIVUDINA 150MG COMPRIMIDO",
+      "quantity": "35.000"
+    }
+  ]
+}

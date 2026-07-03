@@ -1,0 +1,21 @@
+{
+  "tender_id": "112 / 2025",
+  "mode": null,
+  "open_date": "18/03/2025",
+  "cnpj": null,
+  "institution": "SECRETARIA DA SAÚDE",
+  "city": "PORTO ALEGRE",
+  "tender_time": "09:30",
+  "items": [
+    {
+      "item_lot_number": "Lote 1 - Item 1",
+      "product_name": "LOSARTANA POTÁSSICA 50MG COMPRIMIDO",
+      "quantity": "25.000"
+    },
+    {
+      "item_lot_number": "Lote 2 - Item 1",
+      "product_name": "HIDROCLOROTIAZIDA 25MG COMPRIMIDO",
+      "quantity": "15.000"
+    }
+  ]
+}

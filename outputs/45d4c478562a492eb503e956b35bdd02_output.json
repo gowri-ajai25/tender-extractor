@@ -1,0 +1,37 @@
+{
+  "tender_id": "39971",
+  "mode": "PREGÃO",
+  "open_date": "22/08/2025",
+  "cnpj": null,
+  "institution": "SECRETARIA DA SAÚDE",
+  "city": "Porto Alegre",
+  "state": "RS",
+  "tender_time": "09:00",
+  "items": [
+    {
+      "item_lot_number": "Lote 1",
+      "product_name": "MANIDIPINO,DICLOR 10MG.",
+      "quantity": "10.350,0000"
+    },
+    {
+      "item_lot_number": "Lote 2",
+      "product_name": "SAFINAMIDA 100MG",
+      "quantity": "3.600,0000"
+    },
+    {
+      "item_lot_number": "Lote 3",
+      "product_name": "SAFINAMIDA 50MG",
+      "quantity": "7.150,0000"
+    },
+    {
+      "item_lot_number": "Lote 4",
+      "product_name": "ANTIPSICÓTICO - BROMAZEPAM 3MG",
+      "quantity": "9.270,0000"
+    },
+    {
+      "item_lot_number": "Lote 5",
+      "product_name": "ANTIVIRAL - CLORIDRATO VALGANCICLOVIR 450MG.",
+      "quantity": "16.650,0000"
+    }
+  ]
+}

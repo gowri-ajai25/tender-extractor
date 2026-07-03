@@ -1,0 +1,22 @@
+{
+  "tender_id": "77421",
+  "mode": null,
+  "open_date": "05/05/2025",
+  "cnpj": null,
+  "institution": "SECRETARIA DA SEGURANÇA PÚBLICA",
+  "city": "PORTO ALEGRE",
+  "state": "RS",
+  "tender_time": "14:00",
+  "items": [
+    {
+      "item_lot_number": "Lote 1 - Item 1",
+      "product_name": "CÂMERAS FIXAS EXTERNAS",
+      "quantity": "80"
+    },
+    {
+      "item_lot_number": "Lote 1 - Item 2",
+      "product_name": "CÂMERAS DOMES INTERNAS",
+      "quantity": "40"
+    }
+  ]
+}
